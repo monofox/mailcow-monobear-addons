@@ -1,5 +1,6 @@
 from .securitychecker import SecurityChecker
 import argparse
+import yaml
 
 if __name__ == '__main__':
     import os, logging, sys
