@@ -5,7 +5,7 @@ if __name__ == '__main__':
     import os, logging, sys
     log = logging.getLogger(__name__)
     parser = argparse.ArgumentParser(description='Check password security')
-    parser.add_argument('--config', '-c', type=str, help='Configuration file', required=true)
+    parser.add_argument('--config', '-c', type=str, help='Configuration file', required=True)
     args = parser.parse_args()
 
     config = {
