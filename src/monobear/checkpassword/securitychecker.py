@@ -159,19 +159,18 @@ class SecurityChecker(object):
             self._log.debug('Password for user {mail} is fine.'.format(mail=mailaddr))
             return True, '', newResult, checkResult
 
-    def informUser(self, mailacct, msg, result, smtpConfig):
+    def informUser(self, mailacct, errMsg, result, smtpConfig):
         msg = EmailMessage()
         tpl = """Dear Sir or Madam, \r\n\r\n
-                 You recently logged into your mail account {mail}. \r\n
-                 We would like to inform you, that your account is not proper secure, as \r\n
-                 your password is weak ({msg}). See details below: \r\n\r\n
-                 {checkresult}
-                 \r\n
-                 Kindly check and change your password.\r\n\r\n
-                 Best regards,\r\n
-                 Your provider.
-              """
-        msg.set_content(tpl.format(mail=mailacct, msg=msg, checkresult=pprint.pformat(result)))
+You recently logged into your mail account {mail}. \r\n
+We would like to inform you, that your account is not proper secure, as 
+your password is weak ({msg}). See details below: \r\n
+{checkresult}
+\r\n
+Kindly check and change your password.\r\n
+Best regards,
+Your provider."""
+        msg.set_content(tpl.format(mail=mailacct, msg=errMsg, checkresult=pprint.pformat(result)))
         msg['Subject'] = 'Insecure account {mail}'.format(mail=mailacct)
         msg['From'] = smtpConfig.get('sender')
         msg['To'] = mailacct
