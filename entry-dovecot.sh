@@ -1,15 +1,22 @@
-#!/bin/sh
-BASEDIR=$(dirname "$0")
-pushd $BASEDIR
+#!/bin/bash
+BASEDIR="/opt"
+pushd "$BASEDIR"
+# install git if not done yet.
+apt update
+apt install -y git
+if [[ ! -d "/opt/mailcow-monobear-addons" ]]; then
+	git clone https://github.com/monofox/mailcow-monobear-addons.git
+fi
+pushd "mailcow-monobear-addons"
+git pull
 
 # requirements
 python3 setup.py build
-python3 setup.py install --user 
+python3 setup.py install
 
 # configuration
-BASEDIR=$(dirname "$0")
-mkdir -p "$BASEDIR/configs"
-CFGFILE="$BASEDIR/configs/mbear.yaml"
+mkdir -p "configs"
+CFGFILE="configs/mbear.yaml"
 if [[ ! -z ${REDIS_SLAVEOF_IP} ]]; then
   REDIS_HOST="${REDIS_SLAVEOF_IP}"
   REDIS_PORT=${REDIS_SLAVEOF_PORT}
@@ -24,5 +31,5 @@ redis:
   port: ${REDIS_PORT}
   pwd: ""
 EOF
-
+popd
 popd
