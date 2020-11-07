@@ -14,13 +14,16 @@ if __name__ == '__main__':
             'host': '127.0.0.1',
             'port': 6379,
             'pwd': ''
+        },
+        'smtp': {
+            'notify': False
         }
     }
     try:
         with open(args.config, 'rb') as f:
             config = yaml.safe_load(f.read())
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as e:
+        log.error('Can\'t load and parse config file: ({})'.format(str(e)))
 
     try:
         user = os.environ['USER']
@@ -34,5 +37,5 @@ if __name__ == '__main__':
             rStatus, rMessage, newResult, checkResult = s.checkPassword(user, pwd)
             if not rStatus:
                 sys.stdout.write(rMessage + '\r\n')
-                if newResult:
+                if newResult and bool(config.get('smtp').get('notify', False)):
                     s.informUser(user, rMessage, checkResult, config.get('smtp'))

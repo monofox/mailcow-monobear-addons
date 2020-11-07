@@ -31,6 +31,7 @@ redis:
   port: ${REDIS_PORT}
   pwd: ""
 smtp:
+  notify: True
   host: postfix
   port: 587
   tls: True
