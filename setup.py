@@ -11,7 +11,7 @@ with open("requirements.txt", encoding='utf8') as f:
 
 # Metadata goes in setup.cfg. These are here for GitHub's dependency graph.
 setup(
-    name="Monobears Mailcow Addons",
+    name="monobear-mailcow-addons",
     version=version,
     install_requires=requirements
 )
