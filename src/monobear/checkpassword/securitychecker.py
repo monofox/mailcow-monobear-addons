@@ -182,6 +182,7 @@ class SecurityChecker(object):
             if bool(smtpConfig.get('tls', False)):
                 sctx = ssl.create_default_context()
                 if not bool(smtpConfig.get('verifyCert', True)):
+                    sctx.check_hostname = False
                     sctx.verify_mode = ssl.CERT_NONE
                 s.starttls(context=sctx)
             s.send_message(msg)
