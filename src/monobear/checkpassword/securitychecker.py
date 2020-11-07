@@ -8,6 +8,9 @@ import pprint
 import redis
 import requests
 from password_strength import PasswordStats
+from email.message import EmailMessage
+import smtplib
+import ssl
 
 class SecurityChecker(object):
 
@@ -118,7 +121,8 @@ class SecurityChecker(object):
 
     def checkPassword(self, mailaddr, pwd):
         pwdSha1 = hashlib.sha1(pwd.encode('utf-8')).hexdigest().upper()
-        keyName = hashlib.md5((mailaddr + pwd + pwdSha1).encode('utf-8')).hexdigest() + ':5'
+        keyName = 'monobear/pwd/' + hashlib.md5((mailaddr + pwd + pwdSha1).encode('utf-8')).hexdigest() + ':5'
+        newResult = True
         try:
             checkResult = self._redis.get(keyName)
         except AttributeError:
@@ -126,6 +130,7 @@ class SecurityChecker(object):
         else:
             if checkResult:
                 checkResult = json.loads(checkResult.decode('utf-8'))
+                newResult = False
 
         if not checkResult:
             checkResult = self.checkPasswordSecurity(mailaddr, pwd)
@@ -142,12 +147,41 @@ class SecurityChecker(object):
             self._log.debug('Password for user {mail} is at troyhunt {result}.'.format(
                 mail=mailaddr, result=pprint.pformat(checkResult)
             ))
-            return False, '* OK [ALERT] Your password is insecure and was leaked. Please change your password soon.'
+            return False, '* OK [ALERT] Your password is insecure and was leaked. Please change your password soon.', \
+                   newResult, checkResult
         elif checkResult['category_critical']:
             self._log.debug('Password for user {mail} is not fine {result}.'.format(
                 mail=mailaddr, result=pprint.pformat(checkResult)
             ))
-            return False, '* OK [ALERT] Your password is insecure. Please consider to change it.'
+            return False, '* OK [ALERT] Your password is insecure. Please consider to change it.', \
+                   newResult, checkResult
         else:
             self._log.debug('Password for user {mail} is fine.'.format(mail=mailaddr))
-            return True, ''
+            return True, '', newResult, checkResult
+
+    def informUser(self, mailacct, msg, result, smtpConfig):
+        msg = EmailMessage()
+        tpl = """Dear Sir or Madam, \r\n\r\n
+                 You recently logged into your mail account {mail}. \r\n
+                 We would like to inform you, that your account is not proper secure, as \r\n
+                 your password is weak ({msg}). See details below: \r\n\r\n
+                 {checkresult}
+                 \r\n
+                 Kindly check and change your password.\r\n\r\n
+                 Best regards,\r\n
+                 Your provider.
+              """
+        msg.set_content(tpl.format(mail=mailacct, msg=msg, checkresult=pprint.pformat(result)))
+        msg['Subject'] = 'Insecure account {mail}'.format(mail=mailacct)
+        msg['From'] = smtpConfig.get('sender')
+        msg['To'] = mailacct
+        msg['Date'] = datetime.datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')
+
+        # Send the message via our own SMTP server.
+        with smtplib.SMTP(host=smtpConfig.get('host'), port=int(smtpConfig.get('port', 587))) as s:
+            if bool(smtpConfig.get('tls', False)):
+                sctx = ssl.create_default_context()
+                if not bool(smtpConfig.get('verifyCert', True)):
+                    sctx.verify_mode = ssl.CERT_NONE
+                s.starttls(context=sctx)
+            s.send_message(msg)

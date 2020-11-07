@@ -30,6 +30,33 @@ redis:
   host: ${REDIS_HOST}
   port: ${REDIS_PORT}
   pwd: ""
+smtp:
+  host: postfix
+  port: 587
+  tls: True
+  verifyCert: False
+  sender: noreply@monobear.de
 EOF
+
+# update the dovecot sql passdb
+sed -i "s/^password_query = SELECT password /password_query = SELECT password, '%w' as userdb_plain_pass /g" /etc/dovecot/sql/dovecot-dict-sql-passdb.conf
+
+# add the login script
+cat <<EOF > /etc/dovecot/extra.conf
+# have our own login
+service imap-postlogin {
+  executable = script-login /usr/local/bin/postlogin.sh /opt/mailcow-monobear-addons/bin/testPasswordLogin.sh
+  unix_listener imap-postlogin {
+    user = vmail
+    mode = 0660
+  }
+}
+# storage is on network storage
+mmap_disable = yes
+mail_fsync = always
+mail_nfs_index = yes
+mail_nfs_storage = yes
+EOF
+
 popd
 popd

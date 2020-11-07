@@ -31,6 +31,8 @@ if __name__ == '__main__':
         redis = config.get('redis', None)
         if redis:
             s = SecurityChecker(redis.get('host'), redis.get('port'), redis.get('pwd'))
-            rStatus, rMessage = s.checkPassword(user, pwd)
+            rStatus, rMessage, newResult, checkResult = s.checkPassword(user, pwd)
             if not rStatus:
                 sys.stdout.write(rMessage + '\r\n')
+                if newResult:
+                    s.informUser(user, rMessage, checkResult, config.get('smtp'))
